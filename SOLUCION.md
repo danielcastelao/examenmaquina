@@ -21,7 +21,7 @@ Declarada `abstract fun onEnter()` en la `sealed class Estados`; cada estado la 
 
 ## 3. Transiciones (en `gestor()`, con `when` sobre la `sealed class`)
 
-Si `alarma > 0` → `Error`; si no, `when (estado_acual)` con una rama `is` por estado (aunque no sea lo más eficiente):
+`when (estado_acual)` con una rama `is` por estado; en cada rama se comprueba primero `alarma > 0` → `Error` (aunque no sea lo más eficiente):
 
 | Estado | Condición | Siguiente |
 |---|---|---|
@@ -56,7 +56,7 @@ stateDiagram-v2
 
 ## 4. Cuerpo de `gestor(): Int`
 
-1. `estado_acual = if (alarma > 0) Error else when (estado_acual) { ... }` (tabla anterior).
+1. `estado_acual = when (estado_acual) { ... }`, con `alarma > 0` comprobado dentro de cada rama (tabla anterior).
 2. `estado_acual.onEnter()`.
 3. `return nivel_actual`.
 

@@ -67,8 +67,8 @@ sealed class Estados {
             nivel_actual = Niveles.ERROR.valor
         }
 
-        /** Muestra por consola el mensaje de la alarma activa. */
-        fun mostrarMensaje() {
+        /** Muestra por consola el mensaje de la alarma recibida. */
+        fun mostrarMensaje(alarma: Int) {
             println(Alarmas.desde(alarma).mensaje)
         }
     }

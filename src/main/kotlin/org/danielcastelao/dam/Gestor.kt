@@ -16,45 +16,49 @@ var llegada: Boolean = false
  */
 fun gestor(): Int {
     val anterior = estado_acual
-    // Una alarma (> 0) lleva a Error desde cualquier estado
-    estado_acual = if (alarma > 0) {
-        Estados.Error
-    } else {
-        when (estado_acual) {
-            // Reposo: sólo se mueve si se pulsa el botón del otro nivel
-            is Estados.Idle -> {
-                // el botón se consume al leerlo
-                val pulsado = boton
-                boton = Botones.ninguno
-                when {
-                    pulsado == Botones.nivel_1 && nivel_actual == Niveles.NIVEL_0.valor -> Estados.MovingUP
-                    pulsado == Botones.nivel_0 && nivel_actual == Niveles.NIVEL_1.valor -> Estados.MovingDOWN
-                    else -> Estados.Idle
-                }
+    estado_acual = when (estado_acual) {
+        // Reposo: con alarma va a Error; si no, sólo se mueve si se pulsa el botón del otro nivel
+        is Estados.Idle -> {
+            // el botón se consume al leerlo
+            val pulsado = boton
+            boton = Botones.ninguno
+            when {
+                alarma > 0 -> Estados.Error
+                pulsado == Botones.nivel_1 && nivel_actual == Niveles.NIVEL_0.valor -> Estados.MovingUP
+                pulsado == Botones.nivel_0 && nivel_actual == Niveles.NIVEL_1.valor -> Estados.MovingDOWN
+                else -> Estados.Idle
             }
-            // Subiendo: al llegar queda en reposo en el nivel 1
-            is Estados.MovingUP -> {
-                if (llegada) {
+        }
+        // Subiendo: con alarma va a Error; al llegar queda en reposo en el nivel 1
+        is Estados.MovingUP -> {
+            when {
+                alarma > 0 -> Estados.Error
+                llegada -> {
                     llegada = false
                     nivel_actual = Niveles.NIVEL_1.valor
                     Estados.Idle
-                } else Estados.MovingUP
+                }
+                else -> Estados.MovingUP
             }
-            // Bajando: al llegar queda en reposo en el nivel 0
-            is Estados.MovingDOWN -> {
-                if (llegada) {
+        }
+        // Bajando: con alarma va a Error; al llegar queda en reposo en el nivel 0
+        is Estados.MovingDOWN -> {
+            when {
+                alarma > 0 -> Estados.Error
+                llegada -> {
                     llegada = false
                     nivel_actual = Niveles.NIVEL_0.valor
                     Estados.Idle
-                } else Estados.MovingDOWN
+                }
+                else -> Estados.MovingDOWN
             }
-            // Error: no se sale de este estado
-            is Estados.Error -> Estados.Error
         }
+        // Error: no se sale de este estado
+        is Estados.Error -> Estados.Error
     }
     // El mensaje se muestra sólo al entrar en Error, no en cada llamada
     if (estado_acual is Estados.Error && anterior !is Estados.Error) {
-        Estados.Error.mostrarMensaje()
+        Estados.Error.mostrarMensaje(alarma)
     }
     // Acción común de entrada: deja nivel_actual coherente con el estado
     estado_acual.onEnter()
