@@ -6,8 +6,8 @@ var nivel_actual: Int = Niveles.NIVEL_0.valor
 var estado_acual: Estados = Estados.Idle
 // último botón pulsado en la botonera interior
 var boton: Botones = Botones.ninguno
-// indica un fallo del mecanismo
-var fallo: Boolean = false
+// código de alarma: 0 = sin alarma, 1 = mecánico, 2 = software, 3 = no identificado
+var alarma: Int = 0
 // indica que el mecanismo ha terminado el trayecto
 var llegada: Boolean = false
 
@@ -15,8 +15,9 @@ var llegada: Boolean = false
  * Gestiona el cambio de estados
  */
 fun gestor(): Int {
-    // Un fallo lleva a Error desde cualquier estado
-    estado_acual = if (fallo) {
+    val anterior = estado_acual
+    // Una alarma (> 0) lleva a Error desde cualquier estado
+    estado_acual = if (alarma > 0) {
         Estados.Error
     } else {
         when (estado_acual) {
@@ -50,6 +51,10 @@ fun gestor(): Int {
             // Error: no se sale de este estado
             is Estados.Error -> Estados.Error
         }
+    }
+    // El mensaje se muestra sólo al entrar en Error, no en cada llamada
+    if (estado_acual is Estados.Error && anterior !is Estados.Error) {
+        Estados.Error.mostrarMensaje()
     }
     // Acción común de entrada: deja nivel_actual coherente con el estado
     estado_acual.onEnter()

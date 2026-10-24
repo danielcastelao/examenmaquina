@@ -12,6 +12,18 @@ enum class Niveles(val valor: Int) {
     ERROR(-1)
 }
 
+/** Tipos de alarma: el valor es el código guardado en `alarma`. */
+enum class Alarmas(val valor: Int, val mensaje: String) {
+    MECANICO(1, "Error 1: fallo mecanico"),
+    SOFTWARE(2, "Error 2: fallo software"),
+    NO_IDENTIFICADO(3, "Error 3: no identificado");
+
+    companion object {
+        /** Cualquier código sin tipo conocido se trata como no identificado. */
+        fun desde(codigo: Int): Alarmas = entries.find { it.valor == codigo } ?: NO_IDENTIFICADO
+    }
+}
+
 /** Botonera interior del ascensor. */
 enum class Botones {
     nivel_0,
@@ -53,6 +65,11 @@ sealed class Estados {
     object Error : Estados() {
         override fun onEnter() {
             nivel_actual = Niveles.ERROR.valor
+        }
+
+        /** Muestra por consola el mensaje de la alarma activa. */
+        fun mostrarMensaje() {
+            println(Alarmas.desde(alarma).mensaje)
         }
     }
 }

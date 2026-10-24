@@ -8,7 +8,7 @@ Nombres literales del README: `Idle`, `MovingUP`, `MovingDOWN`, `Error`, `nivel_
 - Los enums se usan para las variables (sustituyen los números mágicos):
   - `enum class Niveles(val valor: Int)`: `NIVEL_0(0)`, `NIVEL_1(1)`, `MOVIENDO(2)`, `ERROR(-1)`.
   - `enum class Botones`: `nivel_0`, `nivel_1`, `ninguno`.
-- Variables globales: `nivel_actual` (inicial `0`), `estado_acual` (inicial `Idle`, nombre del código base), `boton: Botones`, `fallo: Boolean`, `llegada: Boolean` (fin de trayecto).
+- Variables globales: `nivel_actual` (inicial `0`), `estado_acual` (inicial `Idle`, nombre del código base), `boton: Botones`, `alarma: Int` (0 = sin alarma, 1 = fallo mecánico, 2 = fallo software, 3 = no identificado; enum `Alarmas`), `llegada: Boolean` (fin de trayecto).
 
 ## 2. Función común `onEnter()`
 
@@ -21,11 +21,11 @@ Declarada `abstract fun onEnter()` en la `sealed class Estados`; cada estado la 
 
 ## 3. Transiciones (en `gestor()`, con `when` sobre la `sealed class`)
 
-Si hay `fallo` → `Error`; si no, `when (estado_acual)` con una rama `is` por estado (aunque no sea lo más eficiente):
+Si `alarma > 0` → `Error`; si no, `when (estado_acual)` con una rama `is` por estado (aunque no sea lo más eficiente):
 
 | Estado | Condición | Siguiente |
 |---|---|---|
-| cualquiera | `fallo` | `Error` |
+| cualquiera | `alarma > 0` | `Error` |
 | `Idle` | botón `nivel_1` y estamos en nivel 0 | `MovingUP` |
 | `Idle` | botón `nivel_0` y estamos en nivel 1 | `MovingDOWN` |
 | `MovingUP` | `llegada` | `Idle` (nivel 1) |
@@ -48,24 +48,24 @@ stateDiagram-v2
     Idle --> MovingDOWN: boton nivel_0 (en nivel 1)
     MovingDOWN --> Idle: llegada (nivel 0)
 
-    Idle --> Error: fallo
-    MovingUP --> Error: fallo
-    MovingDOWN --> Error: fallo
+    Idle --> Error: alarma > 0
+    MovingUP --> Error: alarma > 0
+    MovingDOWN --> Error: alarma > 0
     Error --> Error: siempre
 ```
 
 ## 4. Cuerpo de `gestor(): Int`
 
-1. `estado_acual = if (fallo) Error else when (estado_acual) { ... }` (tabla anterior).
+1. `estado_acual = if (alarma > 0) Error else when (estado_acual) { ... }` (tabla anterior).
 2. `estado_acual.onEnter()`.
 3. `return nivel_actual`.
 
 ## 5. Compatibilidad con `GestorTest`
 
-Sin botón ni fallo, `gestor()` solo aplica `onEnter()` del estado fijado: `Idle`→0, `MovingUP`/`MovingDOWN`→2, `Error`→-1. Los tests actuales siguen pasando (los objetos `Estados.X` no cambian).
+Sin botón ni alarma, `gestor()` solo aplica `onEnter()` del estado fijado: `Idle`→0, `MovingUP`/`MovingDOWN`→2, `Error`→-1. Los tests actuales siguen pasando (los objetos `Estados.X` no cambian).
 
 ## 6. Tests nuevos
 
 - `Idle` + `nivel_1` → `MovingUP` (2) → `llegada` → `Idle` con 1.
 - `Idle` en nivel 1 + `nivel_0` → `MovingDOWN` → `Idle` con 0.
-- `fallo` desde cualquier estado → `Error`; `Error` permanece en `Error`.
+- `alarma` 1, 2, 3 desde cualquier estado → `Error` con su mensaje (`println`, una sola vez al entrar); `Error` permanece en `Error`.

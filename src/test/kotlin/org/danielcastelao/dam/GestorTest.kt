@@ -1,5 +1,7 @@
 package org.danielcastelao.dam
 
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,7 +12,7 @@ class GestorTest {
         estado_acual = Estados.Idle
         nivel_actual = 0
         boton = Botones.ninguno
-        fallo = false
+        alarma = 0
         llegada = false
     }
 
@@ -84,14 +86,51 @@ class GestorTest {
     }
 
     @Test
-    fun `un fallo lleva a Error desde cualquier estado`() {
-        listOf(Estados.Idle, Estados.MovingUP, Estados.MovingDOWN).forEach {
-            estado_acual = it
-            fallo = true
+    fun `una alarma mayor que cero lleva a Error desde cualquier estado`() {
+        listOf(Estados.Idle, Estados.MovingUP, Estados.MovingDOWN).forEach { estado ->
+            (1..3).forEach { codigo ->
+                estado_acual = estado
+                alarma = codigo
 
-            assertEquals(-1, gestor())
-            assertEquals(Estados.Error, estado_acual)
+                assertEquals(-1, gestor())
+                assertEquals(Estados.Error, estado_acual)
+            }
         }
+    }
+
+    @Test
+    fun `cada alarma muestra su mensaje una sola vez`() {
+        val esperados = mapOf(
+            1 to "Error 1: fallo mecanico",
+            2 to "Error 2: fallo software",
+            3 to "Error 3: no identificado",
+            9 to "Error 3: no identificado"
+        )
+        esperados.forEach { (codigo, mensaje) ->
+            estado_acual = Estados.Idle
+            alarma = codigo
+            val salida = ByteArrayOutputStream()
+            val original = System.out
+            System.setOut(PrintStream(salida))
+            try {
+                gestor()
+                gestor()
+            } finally {
+                System.setOut(original)
+            }
+
+            assertEquals(mensaje, salida.toString().trim())
+        }
+    }
+
+    @Test
+    fun `Error se mantiene aunque desaparezca la alarma`() {
+        alarma = 2
+        gestor()
+        alarma = 0
+
+        assertEquals(-1, gestor())
+        assertEquals(Estados.Error, estado_acual)
     }
 
     @Test
